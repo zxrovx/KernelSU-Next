@@ -5,14 +5,15 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/version.h>
+#ifdef CONFIG_KSU_DEBUG
 #include <linux/moduleparam.h>
+#endif
 #include <crypto/hash.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 #include <crypto/sha2.h>
 #else
 #include <crypto/sha.h>
 #endif
-
 #include "apk_sign.h"
 #include "klog.h" // IWYU pragma: keep
 #include "kernel_compat.h"
@@ -367,22 +368,6 @@ module_param_cb(expected_manager_hash, &expected_hash_ops, &expected_manager_has
 
 bool ksu_is_manager_apk(char *path)
 {
-	int tries = 0;
-
-	while (tries++ < 10) {
-		if (!is_lock_held(path))
-			break;
-
-		pr_info("%s: waiting for %s\n", __func__, path);
-		msleep(100);
-	}
-
-	// let it go, if retry fails, check_v2_signature will fail to open it anyway
-	if (tries == 10) {
-		pr_info("%s: timeout for %s\n", __func__, path);
-		return false;
-	}
-
 	// set debug info to print size and hash to kernel log
 	pr_info("%s: expected size: %u, expected hash: %s\n",
 		path, expected_manager_size, expected_manager_hash);
